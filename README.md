@@ -1,4 +1,4 @@
-# regresion-lineal
+# vue-regresion-lineal
 
 ## Project setup
 ```
