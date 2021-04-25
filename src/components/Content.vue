@@ -10,13 +10,13 @@
             <button @click="crearMatriz" class="w-auto px-4 py-2 ml-2 text-xs font-bold text-white bg-blue-500 border-none rounded-md font-poppins hover:bg-blue-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-300">Crear columnas</button>
             <button v-if="displayMatriz" @click="clear" class="w-auto px-4 py-2 ml-2 text-xs font-bold text-white bg-blue-500 border-none rounded-md font-poppins hover:bg-blue-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-300">Reset</button>
         </div>
+            <p v-if="displayMatriz && Number(cFilas) > 1" class="mt-4 text-sm font-poppins">Llena las columnas de <strong>X</strong> y <strong>Y</strong></p>
         <div class="flex mb-20">
             <!-- procedimientos -->
             <div class="flex flex-col">
                 <div v-if="displayMatriz && Number(cFilas) > 1" class="items-center py-5">
-                    <p class="text-sm font-poppins">Llena las columnas de <strong>X</strong> y <strong>Y</strong></p>
                     <div class="justify-center align-middle">
-                        <div class="grid grid-flow-col grid-cols-2 gap-3 mt-4 text-center">
+                        <div class="grid grid-flow-col grid-cols-2 gap-3 mt-1 text-center">
                             <span class="ml-2"><strong> </strong></span>
                             <span class="mr-14"><strong>X</strong></span>
                             <span class="mr-8"><strong>Y</strong></span>
@@ -40,13 +40,49 @@
                 </div>
             </div>
             <!-- tablas de resultados -->
-            <div v-if="showResults"  class="flex flex-col items-center justify-center h-20 px-4 py-2 text-gray-600 align-middle bg-green-200 rounded shadow ml-14 mt-14">
-                <span class="text-sm font-bold font-poppins">
-                    Coeficiente de Correlacion (r): 
-                </span>
-                <span class="text-sm font-medium font-poppins">
-                    {{ coefCorrelacion }}
-                </span>
+            <div v-if="showResults" class="flex flex-col">
+                <div class="flex flex-col items-center justify-center h-20 px-4 py-2 text-gray-600 align-middle bg-green-200 rounded shadow ml-14 mt-14">
+                    <span class="text-sm font-bold font-poppins">
+                        Coeficiente de Correlacion (r): 
+                    </span>
+                    <span class="text-sm font-medium font-poppins">
+                        {{ coefCorrelacion }}
+                    </span>
+                </div>
+                <div class="flex flex-col items-center justify-center h-20 px-4 py-2 mt-4 text-gray-600 align-middle bg-blue-200 rounded shadow ml-14">
+                    <span class="text-sm font-bold font-poppins">
+                        Ecuación
+                    </span>
+                    <span class="text-sm font-medium font-poppins">
+                        Y = {{ b0.toFixed(2) }} + {{ b1.toFixed(2) }} X
+                    </span>
+                </div>
+            </div>
+            <div v-if="showResults" class="flex h-full pb-2 m-5 mt-12 border-b border-gray-200 rounded shadow sm:rounded-lg">
+                <table class="divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr class="text-sm text-center font-poppins">
+                            <th class="px-4 py-1 pl-6"> x </th>
+                            <th class="px-4 py-1"> y </th>
+                            <th class="px-4 py-1"> x*y </th>
+                            <th class="px-4 py-1"> x^2 </th>
+                            <th class="px-4 py-1"> y^2 </th>
+                            <th class="px-4 py-1"> Estimados </th>
+                            <th class="px-4 py-1"> Residual </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="row in resultsTable" :key="row" class="text-sm font-poppins">
+                            <th class="px-4 py-1 pl-6 font-normal"> {{ row.x }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.y }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.xpory }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.x2 }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.y2 }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.estimado.toFixed(2) }}</th>
+                            <th class="px-4 py-1 font-normal"> {{ row.residual.toFixed(2) }}</th>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -111,6 +147,33 @@ export default {
                 sumatoriaY2 += v;
             })
             return sumatoriaY2;
+        },
+        b0(){
+            const b0 = this.sumatoriaY/Number(this.cFilas) - this.b1 * (this.sumatoriaX/Number(this.cFilas));
+            return b0;
+        },
+        b1(){
+            const a = Number(this.cFilas) * this.sumatoriaXporY - this.sumatoriaX * this.sumatoriaY;
+            const b = Number(this.cFilas) * this.sumatoriaX2 - (this.sumatoriaX * this.sumatoriaX);
+            const b1 = a/b;
+            return b1;
+        },
+        resultsTable() {
+            let table = [];
+            // x y xpory x2 y2 estimados residuales
+            for(let i = 0; i < Number(this.cFilas); i++) {
+                let fila = {};
+                fila.x = this.matriz[0][i];
+                fila.y = this.matriz[1][i];
+                fila.xpory = Number(this.matriz[0][i]) * Number(this.matriz[1][i]);
+                fila.x2 = Number(this.matriz[0][i]) * Number(this.matriz[0][i]);
+                fila.y2 = Number(this.matriz[1][i]) * Number(this.matriz[1][i]);
+                fila.estimado = this.b0 + this.b1 * Number(this.matriz[0][i]);
+                fila.residual = Number(this.matriz[1][i]) - fila.estimado;
+
+                table.push(fila);
+            }
+            return table;
         }
     },
     methods: {
